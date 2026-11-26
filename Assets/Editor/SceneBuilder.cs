@@ -2,6 +2,10 @@ using UnityEngine;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
+using UnityEngine.XR.Interaction.Toolkit.Locomotion.Movement;
+using UnityEngine.XR.Interaction.Toolkit.Locomotion.Jump;
+using UnityEngine.XR.Interaction.Toolkit.Locomotion.Turning;
+using UnityEngine.XR.Interaction.Toolkit.Locomotion.Teleportation;
 using Unity.XR.CoreUtils;
 using TMPro;
 
@@ -54,6 +58,15 @@ public static class SceneBuilder
                 {
                     Undo.RecordObject(t.gameObject, "Ukryj podpowiedzi");
                     t.gameObject.SetActive(false);
+                }
+            // Bez sztucznego ruchu (mniej choroby symulatorowej): gracz stoi przy ladzie.
+            // Wyłączamy chodzenie gałką (DynamicMoveProvider dziedziczy po ContinuousMoveProvider),
+            // skok, płynny obrót i teleport. Zostaje obrót skokowy (SnapTurnProvider).
+            foreach (MonoBehaviour m in origin.GetComponentsInChildren<MonoBehaviour>(true))
+                if (m is ContinuousMoveProvider || m is JumpProvider || m is ContinuousTurnProvider || m is TeleportationProvider)
+                {
+                    Undo.RecordObject(m, "Wyłącz sztuczny ruch");
+                    m.enabled = false;
                 }
         }
         GameObject root = new GameObject("Gra");
@@ -159,6 +172,7 @@ public static class SceneBuilder
         gm.streakText = MakeText("Seria", canvasGo.transform, new Vector2(190f, 92f), new Vector2(220f, 60f), new Color(1f, 0.55f, 0.25f));
         gm.messageText = MakeText("Komunikat", canvasGo.transform, new Vector2(0f, -35f), new Vector2(570f, 170f), Color.white);
         gm.messageText.fontSizeMax = 42f;
+        gm.gameObject.AddComponent<ScreenshotHotkey>(); // F12 w trakcie gry = zrzut ekranu
 
         // 12. Symulator XR do testów bez gogli (tag EditorOnly = nie trafi do buildu na gogle)
         foreach (string guid in AssetDatabase.FindAssets("XR Interaction Simulator t:Prefab"))
